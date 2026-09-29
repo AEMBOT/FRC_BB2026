@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import java.util.List;
 
+// TODO camera positions are placeholders until the robot has cameras on it
 public class ProductionCameraConfig {
   // LL4 runs at ~90fps, but MT2 processing reduces effective rate
   private static final double SIM_CAMERA_FPS = 50;
@@ -31,89 +32,40 @@ public class ProductionCameraConfig {
 
   private static final int ENABLED_IMU_MODE = 1;
 
-  /* ---- RIGHT CAM ---- */
-  public final CameraConfiguration cameraConfigRight =
-      CameraConfiguration.makeLimelight4Config("right")
+  /* ---- TAG CAM ---- */
+  // Placeholder apriltag limelight so pose estimation can be simmed. The BunnyBots tags are only
+  // 12.75" off the ground so keep this low and level
+  public final CameraConfiguration cameraConfigTags =
+      CameraConfiguration.makeLimelight4Config("limelight-tags")
           .withCameraOffset(
               new Transform3d(
-                  new Translation3d(
-                      Units.inchesToMeters(-3),
-                      Units.inchesToMeters(-13.5),
-                      Units.inchesToMeters(15.132)),
-                  new Rotation3d(
-                      Units.degreesToRadians(180),
-                      Units.degreesToRadians(-27),
-                      Units.degreesToRadians(-90))))
+                  new Translation3d(Units.inchesToMeters(-12), 0, Units.inchesToMeters(12)),
+                  new Rotation3d(0, 0, Units.degreesToRadians(180))))
           .withDisabledThrottleValue(DISABLED_THROTTLE)
           .withEnabledThrottleValue(ENABLED_THROTTLE)
           .withDisabledIMUMode(DISABLED_IMU_MODE)
           .withEnabledIMUMode(ENABLED_IMU_MODE);
 
-  public final SimulatedCameraConfiguration simConfigRight =
-      new SimulatedCameraConfiguration(cameraConfigRight)
+  public final SimulatedCameraConfiguration simConfigTags =
+      new SimulatedCameraConfiguration(cameraConfigTags)
           .withFramerate(SIM_CAMERA_FPS)
           .withCalibrationError(0, 0)
           .withCameraLatency(SIM_CAMERA_LATENCY_MS, SIM_CAMERA_LATENCY_STDDEV_MS)
           .withPoseNoise(SIM_POSE_NOISE_TRANSLATION_M, SIM_POSE_NOISE_ROTATION_RAD)
           .withLatencyVariation(SIM_LATENCY_VARIATION_MS);
 
-  /* ---- LEFT CAM ---- */
-  public final CameraConfiguration cameraConfigLeft =
-      CameraConfiguration.makeLimelight4Config("left")
+  /* ---- CONE CAM ---- */
+  // Limelight 3A running the cone stack pipeline, not part of the apriltag vision subsystem
+  public final CameraConfiguration cameraConfigCones =
+      CameraConfiguration.makeLimelight3AConfig("limelight-cones")
           .withCameraOffset(
               new Transform3d(
-                  new Translation3d(
-                      Units.inchesToMeters(-3),
-                      Units.inchesToMeters(13.5),
-                      Units.inchesToMeters(15.132)),
-                  new Rotation3d(
-                      Units.degreesToRadians(180),
-                      Units.degreesToRadians(-27),
-                      Units.degreesToRadians(90))))
-          .withDisabledThrottleValue(DISABLED_THROTTLE)
-          .withEnabledThrottleValue(ENABLED_THROTTLE)
-          .withDisabledIMUMode(DISABLED_IMU_MODE)
-          .withEnabledIMUMode(ENABLED_IMU_MODE);
+                  new Translation3d(Units.inchesToMeters(12), 0, Units.inchesToMeters(12)),
+                  new Rotation3d()));
 
-  public final SimulatedCameraConfiguration simConfigLeft =
-      new SimulatedCameraConfiguration(cameraConfigLeft)
-          .withFramerate(SIM_CAMERA_FPS)
-          .withCalibrationError(0, 0)
-          .withCameraLatency(SIM_CAMERA_LATENCY_MS, SIM_CAMERA_LATENCY_STDDEV_MS)
-          .withPoseNoise(SIM_POSE_NOISE_TRANSLATION_M, SIM_POSE_NOISE_ROTATION_RAD)
-          .withLatencyVariation(SIM_LATENCY_VARIATION_MS);
+  /** Apriltag cameras in the order their IO gets created */
+  public final List<CameraConfiguration> cameraConfigurations = List.of(cameraConfigTags);
 
-  /* ---- BACK CAM ---- */
-  public final CameraConfiguration cameraConfigBack =
-      CameraConfiguration.makeLimelight4Config("back")
-          .withCameraOffset(
-              new Transform3d(
-                  new Translation3d(
-                      Units.inchesToMeters(-13),
-                      Units.inchesToMeters(0),
-                      Units.inchesToMeters(9.18)),
-                  new Rotation3d(
-                      Units.degreesToRadians(0),
-                      Units.degreesToRadians(-27),
-                      Units.degreesToRadians(180))))
-          .withDisabledThrottleValue(DISABLED_THROTTLE)
-          .withEnabledThrottleValue(ENABLED_THROTTLE)
-          .withDisabledIMUMode(DISABLED_IMU_MODE)
-          .withEnabledIMUMode(ENABLED_IMU_MODE);
-
-  public final SimulatedCameraConfiguration simConfigBack =
-      new SimulatedCameraConfiguration(cameraConfigBack)
-          .withFramerate(SIM_CAMERA_FPS)
-          .withCalibrationError(0, 0)
-          .withCameraLatency(SIM_CAMERA_LATENCY_MS, SIM_CAMERA_LATENCY_STDDEV_MS)
-          .withPoseNoise(SIM_POSE_NOISE_TRANSLATION_M, SIM_POSE_NOISE_ROTATION_RAD)
-          .withLatencyVariation(SIM_LATENCY_VARIATION_MS);
-
-  /** List of configurations in FL, FR, BL, BR order */
-  public final List<CameraConfiguration> cameraConfigurations =
-      List.of(cameraConfigRight, cameraConfigLeft, cameraConfigBack);
-
-  /** List of configurations in FL, FR, BL, BR order */
-  public final List<SimulatedCameraConfiguration> simConfigurations =
-      List.of(simConfigRight, simConfigLeft, simConfigBack);
+  /** Simulated apriltag cameras, same order as {@link #cameraConfigurations} */
+  public final List<SimulatedCameraConfiguration> simConfigurations = List.of(simConfigTags);
 }

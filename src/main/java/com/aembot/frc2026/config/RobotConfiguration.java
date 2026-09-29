@@ -1,6 +1,7 @@
 package com.aembot.frc2026.config;
 
 import com.aembot.frc2026.config.robots.ProductionConfig;
+import com.aembot.frc2026.config.subsystems.intake.ConeIntakeConfiguration;
 import com.aembot.lib.config.subsystems.drive.DrivetrainConfiguration;
 import com.aembot.lib.config.subsystems.drive.SwerveModuleConfiguration;
 import com.aembot.lib.config.subsystems.drive.simulation.DrivetrainSimConfiguration;
@@ -69,6 +70,21 @@ public abstract class RobotConfiguration {
    * @return List of {@link SimulatedCameraConfiguration}s of the given robot
    */
   public abstract List<SimulatedCameraConfiguration> getSimulatedCameraConfigurations();
+
+  /**
+   * Get the config of the camera running the cone stack pipeline. Sim uses it to render that view
+   *
+   * @return {@link CameraConfiguration} of the cone camera
+   */
+  public abstract CameraConfiguration getConeCameraConfiguration();
+
+  /**
+   * Get the geometry of the cone intake and where it lets go of cones. Sim uses it for the intake
+   * collider and tosses
+   *
+   * @return {@link ConeIntakeConfiguration} of this robot
+   */
+  public abstract ConeIntakeConfiguration getConeIntakeConfiguration();
 
   /**
    * retrieve the correct robot constants based on the given robot identification

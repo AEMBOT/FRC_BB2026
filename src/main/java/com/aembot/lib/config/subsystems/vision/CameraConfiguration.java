@@ -42,6 +42,7 @@ public class CameraConfiguration {
 
   public enum FOV {
     LIMELIGHT4(82, 56.2),
+    LIMELIGHT3A(54.5, 42),
     ;
 
     public final double horizontalDegrees;
@@ -365,6 +366,11 @@ public class CameraConfiguration {
   }
 
   /* ---- FACTORY METHODS ---- */
+  /** Limelight 3A at its full 1280x960, the color camera for the cone pipeline */
+  public static CameraConfiguration makeLimelight3AConfig(String name) {
+    return makeLimelight4Config(name).withCameraFOV(FOV.LIMELIGHT3A);
+  }
+
   public static CameraConfiguration makeLimelight4Config(String name) {
     return new CameraConfiguration(name, Type.LIMELIGHT)
         .withCameraResolution(Resolution.P1280x960)

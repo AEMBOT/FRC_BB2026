@@ -5,38 +5,36 @@
 package com.aembot.frc2026;
 
 import com.aembot.frc2026.commands.CommandFactory;
+import com.aembot.frc2026.commands.SimulationCommandFactory;
+import com.aembot.frc2026.constants.RobotRuntimeConstants;
+import com.aembot.frc2026.constants.field.FieldBB2026;
 import com.aembot.frc2026.state.RobotStateYearly;
+import com.aembot.frc2026.state.SimulatedRobotStateYearly;
 import com.aembot.frc2026.subsystems.SubsystemFactory;
 import com.aembot.frc2026.util.AutoHelper;
-import com.aembot.lib.core.logging.Loggerable;
-import com.aembot.lib.core.logging.log_entries.LogEntry;
+import com.aembot.lib.constants.RuntimeConstants.RuntimeMode;
+import com.aembot.lib.core.RobotContainerBase;
 import com.aembot.lib.subsystems.aprilvision.AprilVisionSubsystem;
 import com.aembot.lib.subsystems.drive.DriveSubsystem;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.littletonrobotics.junction.LoggedRobot;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
- * subsystems, commands, and trigger mappings) should be declared here.
+ * subsystems, commands, and trigger mappings) should be declared here. Controllers, alliance
+ * triggers and the logger boilerplate live in {@link RobotContainerBase}.
  */
-public class RobotContainer implements Loggerable {
-
-  // Replace with CommandPS4Controller or CommandJoystick if needed
-  private final CommandXboxController driverController = new CommandXboxController(0);
-
-  @SuppressWarnings("unused")
-  private final CommandXboxController secondaryController = new CommandXboxController(1);
+public class RobotContainer extends RobotContainerBase {
+  /** Between the blue starting line and the arena, placeholder until there are autos */
+  private static final Pose2d BLUE_START_POSE =
+      new Pose2d(FieldBB2026.BLUE_STARTING_LINE_X + 0.5, 1.8, Rotation2d.kZero);
 
   /* ---- DRIVETRAIN ---- */
   private final DriveSubsystem driveSubsystem = SubsystemFactory.createDriveSubsystem();
@@ -47,40 +45,21 @@ public class RobotContainer implements Loggerable {
   private final AprilVisionSubsystem visionSubsystem =
       SubsystemFactory.createAprilVisionSubsystem();
 
-  private final Trigger robotEnabled = new Trigger(() -> DriverStation.isEnabled());
-
-  private final Trigger allianceInitialized =
-      new Trigger(() -> DriverStation.getAlliance().isPresent());
-
-  private final Trigger allianceIsRed =
-      new Trigger(
-          () ->
-              allianceInitialized.getAsBoolean()
-                  && DriverStation.getAlliance().get().equals(Alliance.Red));
-
-  private final Trigger allianceIsBlue =
-      new Trigger(
-          () ->
-              allianceInitialized.getAsBoolean()
-                  && DriverStation.getAlliance().get().equals(Alliance.Blue));
-
-  private final Field2d field = new Field2d();
-
-  /* ---- LOG ENTRIES ---- */
-  private final LogEntry<Alliance> allianceLogEntry =
-      new LogEntry<>("Alliance", Alliance.class, 20);
-  private final LogEntry<Boolean> allianceSetLogEntry =
-      new LogEntry<>("AllianceSet", Boolean.class, 20);
-
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer(LoggedRobot robot) {
-    setupLogger(robot);
+    super(robot);
 
     this.commandFactory = new CommandFactory(driveSubsystem);
 
+    if (RobotRuntimeConstants.MODE == RuntimeMode.SIM) {
+      SimulatedRobotStateYearly.get()
+          .setDriveSim(driveSubsystem.getSimDrivetrain().mapleSimSwerveDrivetrain);
+      configureSimulationBindings();
+    }
+
     configureBindings();
 
-    driveSubsystem.resetPose(new Pose2d(2, 4, Rotation2d.fromDegrees(-180)));
+    driveSubsystem.resetPose(BLUE_START_POSE);
   }
 
   /** Use this method to define your controller button -> command mappings */
@@ -113,32 +92,38 @@ public class RobotContainer implements Loggerable {
     // allianceIsRed.onChange(setupAutos());
   }
 
-  /**
-   * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
-   * @return the command to run in autonomous
-   */
+  /** Sim only bindings on the secondary controller for messing with the cone sim */
+  private void configureSimulationBindings() {
+    SimulationCommandFactory simulationCommands =
+        new SimulationCommandFactory(SimulatedRobotStateYearly.get());
+
+    secondaryController.a().whileTrue(simulationCommands.runIntake());
+    secondaryController.y().onTrue(simulationCommands.lightToss());
+    secondaryController.b().onTrue(simulationCommands.ejectCone());
+    secondaryController.x().onTrue(simulationCommands.spawnHumanPlayerBunny());
+
+    // Human players, left is blue right is red
+    secondaryController.leftBumper().onTrue(simulationCommands.spawnHumanPlayerCone(Alliance.Blue));
+    secondaryController.rightBumper().onTrue(simulationCommands.spawnHumanPlayerCone(Alliance.Red));
+
+    secondaryController.back().onTrue(simulationCommands.resetField());
+  }
+
+  @Override
   public Command getAutonomousCommand() {
     return AutoHelper.autoChooser.selectedCommandScheduler();
   }
 
-  /**
-   * Use this to pass the teleop init command to the main {@link Robot} class
-   *
-   * @return the command to run at the start of teleop
-   */
+  @Override
   public Command getTeleopInitCommand() {
     return new InstantCommand();
   }
 
+  @Override
   public void logCommands() {
+    super.logCommands();
     commandFactory.logCommands();
-    if (DriverStation.getAlliance().isPresent())
-      allianceLogEntry.pushValue(DriverStation.getAlliance().get());
-    allianceSetLogEntry.pushValue(DriverStation.getAlliance().isPresent());
-
-    field.setRobotPose(RobotStateYearly.get().getLatestFieldRobotPose());
-    SmartDashboard.putData("FieldData/Field2d", field);
+    logFieldPose(RobotStateYearly.get().getLatestFieldRobotPose());
   }
 
   private Command setupAutos() {

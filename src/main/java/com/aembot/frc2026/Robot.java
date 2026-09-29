@@ -4,8 +4,10 @@
 
 package com.aembot.frc2026;
 
+import com.aembot.frc2026.constants.RobotRuntimeConstants;
 import com.aembot.frc2026.state.RobotStateYearly;
 import com.aembot.frc2026.state.SimulatedRobotStateYearly;
+import com.aembot.lib.constants.RuntimeConstants.RuntimeMode;
 import com.aembot.lib.core.can.CANStatusLogger;
 import com.aembot.lib.core.logging.AEMLogger;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -27,6 +29,12 @@ public class Robot extends LoggedRobot {
    * initialization code.
    */
   public Robot() {
+    // Has to happen before the drivetrain sim is built, since that registers with whatever
+    // arena exists at the time and this is what installs the Cone Zone one
+    if (RobotRuntimeConstants.MODE == RuntimeMode.SIM) {
+      SimulatedRobotStateYearly.get();
+    }
+
     // Instantiate our RobotContainer.  This will setup all our button bindings, put our
     // autonomous chooser on the dashboard, and set up logging
     m_robotContainer = new RobotContainer(this);

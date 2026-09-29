@@ -2,6 +2,7 @@ package com.aembot.lib.constants;
 
 import com.aembot.frc2026.constants.RobotRuntimeConstants;
 import com.aembot.lib.config.RobotID;
+import com.aembot.lib.constants.fields.YearFieldConstantable;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.RobotBase;
@@ -32,6 +33,9 @@ public class RuntimeConstants {
   // to make porting between years a bit easier and less spaghettiful. TODO have other humans check
   // this
   public static final RobotID ROBOT_ID = RobotRuntimeConstants.ROBOT_ID;
+
+  /** This season's field, picked in RobotRuntimeConstants. Same idea as ROBOT_ID */
+  public static final YearFieldConstantable FIELD = RobotRuntimeConstants.FIELD;
 
   /**
    * Are on the red alliance currently

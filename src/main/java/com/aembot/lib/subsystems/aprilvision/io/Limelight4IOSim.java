@@ -19,7 +19,6 @@ import java.util.function.BiFunction;
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
-import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.VisionSystemSim;
 import org.photonvision.targeting.PhotonPipelineResult;
@@ -123,12 +122,17 @@ public class Limelight4IOSim extends Limelight4IOHardware {
     this.simConfig = config;
 
     this.photonCamera = new PhotonCamera(simConfig.cameraConfiguration.cameraName);
-    this.photonCameraSim = new PhotonCameraSim(photonCamera, simConfig.simCameraProperties);
+    // Camera sim needs the layout too or multitag gets solved against photonvision's default field
+    this.photonCameraSim =
+        new PhotonCameraSim(
+            photonCamera, simConfig.simCameraProperties, fieldConstants.getFieldLayout());
+    photonCameraSim.enableRawStream(simConfig.debugStreams);
+    photonCameraSim.enableProcessedStream(simConfig.debugStreams);
 
     this.photonPoseEstimator =
         new PhotonPoseEstimator(
             fieldConstants.getFieldLayout(),
-            PoseStrategy.CONSTRAINED_SOLVEPNP,
+            simConfig.estimationStrategy,
             PositionUtil.toTransform3d(config.cameraConfiguration.getCameraPosition()));
 
     this.visionSystemSim =

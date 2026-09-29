@@ -31,6 +31,12 @@ public class SimulatedCameraConfiguration {
    */
   public double latencyVariationMs = 0.0;
 
+  /**
+   * Publish photonvision's raw and processed debug streams to CameraServer. Off by default, drawing
+   * them at full resolution every loop is enough to overrun the 20ms loop on its own.
+   */
+  public boolean debugStreams = false;
+
   public SimulatedCameraConfiguration(CameraConfiguration cameraConfiguration) {
     this.cameraConfiguration = cameraConfiguration;
 
@@ -100,6 +106,17 @@ public class SimulatedCameraConfiguration {
       double avgLatencyMs, double latencyStdDevMs) {
     simCameraProperties.setAvgLatencyMs(avgLatencyMs);
     simCameraProperties.setLatencyStdDevMs(latencyStdDevMs);
+    return this;
+  }
+
+  /**
+   * Turn photonvision's raw and processed debug streams on or off in sim
+   *
+   * @param enabled True to publish them to CameraServer
+   * @return This {@link SimulatedCameraConfiguration} for chaining
+   */
+  public SimulatedCameraConfiguration withDebugStreams(boolean enabled) {
+    this.debugStreams = enabled;
     return this;
   }
 

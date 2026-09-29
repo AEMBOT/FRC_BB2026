@@ -1,6 +1,7 @@
 package com.aembot.frc2026.config.robots;
 
 import com.aembot.frc2026.config.RobotConfiguration;
+import com.aembot.frc2026.config.subsystems.intake.ConeIntakeConfiguration;
 import com.aembot.lib.config.robot.PhysicalConfiguration;
 import com.aembot.lib.config.subsystems.drive.DrivetrainConfiguration;
 import com.aembot.lib.config.subsystems.drive.SwerveModuleConfiguration;
@@ -34,6 +35,8 @@ public class ProductionConfig extends RobotConfiguration {
       new ProductionDrivetrainConfig(PHYSICAL_CONFIGURATION, DRIVETRAIN_BUS_NAME);
 
   private static final ProductionCameraConfig CAMERA_CONFIG = new ProductionCameraConfig();
+
+  private static final ProductionConeConfig CONE_CONFIG = new ProductionConeConfig();
 
   @Override
   public String getRobotName() {
@@ -71,5 +74,15 @@ public class ProductionConfig extends RobotConfiguration {
   @Override
   public List<SimulatedCameraConfiguration> getSimulatedCameraConfigurations() {
     return CAMERA_CONFIG.simConfigurations;
+  }
+
+  @Override
+  public CameraConfiguration getConeCameraConfiguration() {
+    return CAMERA_CONFIG.cameraConfigCones;
+  }
+
+  @Override
+  public ConeIntakeConfiguration getConeIntakeConfiguration() {
+    return CONE_CONFIG.intakeConfiguration;
   }
 }
