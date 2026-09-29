@@ -1,0 +1,59 @@
+package com.aembot.lib.subsystems.aprilvision.interfaces;
+
+import com.aembot.lib.config.odometry.OdometryStandardDevs;
+import com.aembot.lib.config.subsystems.vision.CameraConfiguration;
+import com.aembot.lib.core.logging.AEMLogger;
+import com.aembot.lib.subsystems.aprilvision.AprilVisionInputs;
+import edu.wpi.first.math.geometry.Pose2d;
+
+public interface AprilCameraIO {
+  public CameraConfiguration getConfiguration();
+
+  public void updateInputs(AprilVisionInputs inputs);
+
+  /**
+   * Adjust the given standard deviations to take into account the distance between the robot pose
+   * estimated by the whole odometry system and the pose estimated by this camera
+   *
+   * @param unadjustedStandardDevs The standard deviations not taking into account the above
+   * @param wholeEstimatedRobotPose The estimated robot pose from robot state.
+   * @param cameraEstimatedRobotPose The estimated robot pose from this camera
+   * @return Adjusted std devs
+   */
+  default OdometryStandardDevs adjustStdDevsWithOdomPose(
+      OdometryStandardDevs unadjustedStandardDevs,
+      Pose2d wholeEstimatedRobotPose,
+      Pose2d cameraEstimatedRobotPose) {
+
+    // // Guard against null or NaN poses
+    // if (wholeEstimatedRobotPose == null
+    //     || cameraEstimatedRobotPose == null
+    //     || Double.isNaN(wholeEstimatedRobotPose.getX())
+    //     || Double.isNaN(wholeEstimatedRobotPose.getY())
+    //     || Double.isNaN(cameraEstimatedRobotPose.getX())
+    //     || Double.isNaN(cameraEstimatedRobotPose.getY())) {
+
+    //   AEMLogger.recordOutput(getConfiguration() + "/stdDevs", unadjustedStandardDevs);
+    //   return unadjustedStandardDevs;
+    // }
+
+    double distMeters =
+        wholeEstimatedRobotPose.minus(cameraEstimatedRobotPose).getTranslation().getNorm();
+    double factor = 1 + (Math.pow(distMeters, 2) * 2); // Prolly very subject to change
+
+    AEMLogger.recordOutput(
+        getConfiguration() + "/stdDevs",
+        new OdometryStandardDevs(
+            unadjustedStandardDevs.xStdDev() * factor,
+            unadjustedStandardDevs.yStdDev() * factor,
+            unadjustedStandardDevs.rotStdDev() * factor));
+    return new OdometryStandardDevs(
+        unadjustedStandardDevs.xStdDev() * factor,
+        unadjustedStandardDevs.yStdDev() * factor,
+        unadjustedStandardDevs.rotStdDev() * factor);
+  }
+
+  public void updateNetworkTablesForDisabled();
+
+  public void updateNetworkTablesForEnabled();
+}

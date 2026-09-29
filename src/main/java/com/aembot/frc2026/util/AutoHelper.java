@@ -1,0 +1,117 @@
+package com.aembot.frc2026.util;
+
+import choreo.auto.AutoChooser;
+import choreo.auto.AutoFactory;
+import choreo.auto.AutoRoutine;
+import choreo.auto.AutoTrajectory;
+import choreo.trajectory.SwerveSample;
+import com.aembot.frc2026.commands.CommandFactory;
+import com.aembot.frc2026.state.RobotStateYearly;
+import com.aembot.lib.core.logging.AEMLogger;
+import com.aembot.lib.subsystems.drive.DriveSubsystem;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
+import java.util.function.Consumer;
+
+public class AutoHelper {
+
+  public static final AutoChooser autoChooser = new AutoChooser();
+
+  public static AutoFactory autoFactory;
+
+  public static Consumer<Pose2d> setOdometryFunc;
+
+  /**
+   * Setip the auto builder
+   *
+   * @param driveSubsystem The drive subsystem to control
+   */
+  public static void setupAutoFactory(DriveSubsystem driveSubsystem) {
+
+    setOdometryFunc = (pose) -> driveSubsystem.resetPose(pose);
+
+    autoFactory =
+        new AutoFactory(
+            () -> RobotStateYearly.get().getLatestFieldRobotPose(),
+            (pose) -> driveSubsystem.resetPose(pose),
+            (SwerveSample sample) -> driveSubsystem.setRequestFromSwerveSample(sample),
+            true,
+            driveSubsystem,
+            (state, isStart) -> AEMLogger.recordOutput("AUTO_TRAJ", state.getPoses()));
+
+    // Elastic.
+  }
+
+  /**
+   * Add all autos to the auto chooser
+   *
+   * <p>DOES NOT add auto chooser to dashboard
+   */
+  public static void setupAutoChooser(CommandFactory commandFactory) {
+    // TODO make clean
+    AutoRoutine doNothingRoutine = autoFactory.newRoutine("DoNothing");
+
+    doNothingRoutine
+        .active()
+        .onTrue(
+            new InstantCommand(
+                () ->
+                    setOdometryFunc.accept(
+                        new Pose2d(
+                            0,
+                            0,
+                            DriverStation.getAlliance().get() == Alliance.Blue
+                                ? Rotation2d.k180deg
+                                : Rotation2d.kZero))));
+
+    autoChooser.addRoutine("DoNothing", () -> doNothingRoutine);
+
+    SmartDashboard.putData("set odom for auto", setOdomForAuto());
+  }
+
+  private static Command setOdomForAuto() {
+    return new InstantCommand(
+            () -> {
+              String autoName = autoChooser.selectedCommand().getName();
+              AutoTrajectory traj = autoFactory.newRoutine(autoName).trajectory(autoName);
+              setOdometryFunc.accept(traj.getInitialPose().orElse(new Pose2d()));
+            })
+        .withName("Set auto pos")
+        .ignoringDisable(true);
+  }
+
+  /**
+   * Add an auto to the auto chooser
+   *
+   * @param autoName name of the auto to add
+   */
+  @SuppressWarnings("unused")
+  private static void addAuto(String autoName) {
+
+    AutoRoutine routine = autoFactory.newRoutine(autoName);
+
+    AutoTrajectory traj = routine.trajectory(autoName);
+
+    routine
+        .active()
+        .onTrue(
+            new InstantCommand(() -> setOdometryFunc.accept(traj.getInitialPose().orElseThrow()))
+                .andThen(new WaitCommand(1))
+                .andThen(traj.cmd()));
+
+    autoChooser.addRoutine(autoName, () -> routine);
+  }
+
+  /**
+   * Register all auto commands to use in choreo
+   *
+   * @param commandFactory the command factory used by robot container
+   */
+  public static void registerAutoCommands(CommandFactory commandFactory) {}
+}
